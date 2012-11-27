@@ -68,6 +68,14 @@ public class GCMIntentService extends GCMBaseIntentService {
 		CharSequence tickerText = (CharSequence) data.get("ticker");
 		long when = System.currentTimeMillis();
 
+		//Get the notification ID
+		int notifyID = 1;
+		String contentID = (String) data.get("id");
+
+		if(contentID != null) {
+			notifyID = Integer.parseInt(contentID);
+		}
+
 		CharSequence contentTitle = (CharSequence) data.get("title");
 		CharSequence contentText = (CharSequence) data.get("message");
 
@@ -77,7 +85,14 @@ public class GCMIntentService extends GCMBaseIntentService {
 		launcherintent.setFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
 		//I'm sure there is a better way ...
 		launcherintent.setComponent(ComponentName.unflattenFromString(systProp.getString("com.activate.gcm.component", "")));
-		//
+		
+		// Save data
+		JSONObject json = new JSONObject(data);
+		String jsonString = json.toString();
+		launcherintent.putExtra("PushNotifications-Data", jsonString);
+		systProp.setString("PushNotifications-Last", jsonString);
+		systProp.setString("com.activate.gcm.last_data", jsonString);
+
 		launcherintent.addCategory("android.intent.category.LAUNCHER");
 
 
@@ -94,7 +109,7 @@ public class GCMIntentService extends GCMBaseIntentService {
 
 		if("default".equals(sound)) {
 			Log.e(LCAT, "Notification: DEFAULT_SOUND");
-		    	notification.defaults |= Notification.DEFAULT_SOUND;
+		    notification.defaults |= Notification.DEFAULT_SOUND;
 		} 
 		else if(sound != null) {
 
@@ -113,10 +128,10 @@ public class GCMIntentService extends GCMBaseIntentService {
 
 			if (file.exists()) {
 				Uri soundUri = Uri.fromFile(file);
-		    		notification.sound = soundUri;
+		    	notification.sound = soundUri;
 			}
 			else {
-		    		notification.defaults |= Notification.DEFAULT_SOUND;
+		    	notification.defaults |= Notification.DEFAULT_SOUND;
 			}
 		}
 		
@@ -130,10 +145,8 @@ public class GCMIntentService extends GCMBaseIntentService {
 		notification.setLatestEventInfo(context, contentTitle, contentText, contentIntent);
 		String ns = Context.NOTIFICATION_SERVICE;
 		NotificationManager mNotificationManager = (NotificationManager) getSystemService(ns);
-		mNotificationManager.notify(1, notification);
+		mNotificationManager.notify(notifyID, notification);
 
-		JSONObject json = new JSONObject(data);
-		systProp.setString("com.activate.gcm.last_data", json.toString());
 		if (C2dmModule.getInstance() != null){
 			C2dmModule.getInstance().sendMessage(data);
 		}
